@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Règles pour la collection holders
+    match /holders/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Règles pour la collection savings
+    match /savings/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Règles pour la collection budgetElements
+    match /budgetElements/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
