@@ -6,6 +6,7 @@ import BudgetElementForm from './pages/BudgetElementForm';
 import Savings from './pages/Savings';
 import Holders from './pages/Holders';
 import Navbar from './components/Navbar';
+import TrueLayerCallback from './components/TrueLayerCallback';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <main className="container mx-auto px-4 py-8">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/callback" element={<TrueLayerCallback />} />
               <Route path="/budget-elements" element={<BudgetElements />} />
               <Route path="/budget-elements/new" element={<BudgetElementForm />} />
               <Route path="/budget-elements/:id" element={<BudgetElementForm />} />
