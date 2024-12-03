@@ -21,18 +21,62 @@ const BankTransactions = () => {
 
   const fetchTransactions = async (token) => {
     try {
-      console.log('Appel API transactions avec le token');
-      const response = await axios.get('https://api.truelayer-sandbox.com/data/v1/transactions', {
+      console.log('=== RÉCUPÉRATION DES TRANSACTIONS ===');
+      console.log('Token utilisé:', token);
+      
+      // D'abord, récupérons les comptes disponibles via notre serveur
+      const accountsResponse = await axios.get('http://localhost:5073/api/accounts', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-
-      console.log('Transactions reçues:', response.data);
-      setTransactions(response.data.results || []);
+      
+      console.log('Comptes disponibles:', accountsResponse.data);
+      
+      if (!accountsResponse.data.results || accountsResponse.data.results.length === 0) {
+        throw new Error('Aucun compte disponible');
+      }
+      
+      // Récupérer les transactions pour chaque compte via notre serveur
+      const allTransactions = [];
+      for (const account of accountsResponse.data.results) {
+        console.log(`Récupération des transactions pour le compte ${account.account_id}`);
+        
+        const transactionsResponse = await axios.get(
+          `http://localhost:5073/api/accounts/${account.account_id}/transactions`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        
+        console.log(`Transactions reçues pour le compte ${account.account_id}:`, transactionsResponse.data);
+        
+        if (transactionsResponse.data.results) {
+          allTransactions.push(...transactionsResponse.data.results);
+        }
+      }
+      
+      console.log('Toutes les transactions:', allTransactions);
+      setTransactions(allTransactions);
     } catch (error) {
-      console.error('Erreur lors de la récupération des transactions:', error);
-      setError('Erreur lors de la récupération des transactions');
+      console.error('Erreur détaillée lors de la récupération des transactions:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
+      
+      let errorMessage = 'Erreur lors de la récupération des transactions';
+      if (error.response?.data?.error) {
+        errorMessage += `: ${error.response.data.error}`;
+      } else if (error.message) {
+        errorMessage += `: ${error.message}`;
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -102,27 +146,36 @@ const BankTransactions = () => {
 
       {transactions.length > 0 ? (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
+          <table className="min-w-full bg-white border border-gray-200">
             <thead>
               <tr className="bg-gray-100">
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Description</th>
-                <th className="px-4 py-2">Montant</th>
+                <th className="px-4 py-2 text-left text-gray-700">Date</th>
+                <th className="px-4 py-2 text-left text-gray-700">Description</th>
+                <th className="px-4 py-2 text-right text-gray-700">Montant</th>
               </tr>
             </thead>
             <tbody>
               {transactions.map((transaction, index) => (
-                <tr key={index} className="border-b">
-                  <td className="px-4 py-2">{format(new Date(transaction.timestamp), 'dd MMMM yyyy', { locale: fr })}</td>
-                  <td className="px-4 py-2">{transaction.description}</td>
-                  <td className="px-4 py-2">{formatAmount(transaction.amount)} {transaction.currency}</td>
+                <tr key={index} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-2 text-gray-900">
+                    {format(new Date(transaction.timestamp), 'dd MMMM yyyy', { locale: fr })}
+                  </td>
+                  <td className="px-4 py-2 text-gray-900">{transaction.description}</td>
+                  <td className={`px-4 py-2 text-right ${
+                    transaction.amount < 0 ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {new Intl.NumberFormat('fr-FR', { 
+                      style: 'currency', 
+                      currency: transaction.currency || 'EUR'
+                    }).format(transaction.amount)}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <p>Aucune transaction à afficher</p>
+        <p className="text-gray-700">Aucune transaction à afficher</p>
       )}
     </div>
   );

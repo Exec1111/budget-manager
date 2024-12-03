@@ -183,6 +183,55 @@ app.post('/api/bank/callback', async (req, res) => {
   }
 });
 
+app.get('/api/accounts', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Token manquant' });
+    }
+
+    console.log('Récupération des comptes avec le token:', token);
+    const accountsResponse = await axios.get('https://api.truelayer-sandbox.com/data/v1/accounts', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    res.json(accountsResponse.data);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des comptes:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Erreur lors de la récupération des comptes' });
+  }
+});
+
+app.get('/api/accounts/:accountId/transactions', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Token manquant' });
+    }
+
+    const { accountId } = req.params;
+    console.log(`Récupération des transactions pour le compte ${accountId}`);
+    
+    const transactionsResponse = await axios.get(
+      `https://api.truelayer-sandbox.com/data/v1/accounts/${accountId}/transactions`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    res.json(transactionsResponse.data);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des transactions:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Erreur lors de la récupération des transactions' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });
